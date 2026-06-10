@@ -7,7 +7,7 @@ import math
 
 import numpy as np
 
-from sim import (Body, World, Steelpush, IronFeruchemy, GoldFeruchemy,
+from sim import (Body, World, Steelpush, Ironpull, IronFeruchemy, GoldFeruchemy,
                  SteelFeruchemy, Legs, GoldCompounding, Health, Poison,
                  SpeedBubble, GRAVITY_M_PER_S2)
 
@@ -352,6 +352,52 @@ def check_steel_velocity_is_kept_but_bubble_velocity_is_not():
     assert abs(bubbled - plain) < 0.5
 
 
+def check_pulled_coins_never_anchor():
+    # The Lurcher asymmetry. Identical overhead geometry that anchored the
+    # PUSHED coin (its grip grew with the push): pulled instead, the force
+    # lifts the coin and destroys its grip — it flies straight to Wax.
+    world = World()
+    coin = world.add_body(Body("coin", 0.004, (3, 0.01), radius_m=0.01, is_metal=True))
+    wax = world.add_body(Body("wax", 80, (3, 1.0)))
+    pull = world.add_power(Ironpull(wax, coin, 2000))
+    pull.active = True
+    # The coin moves tick-jumps faster than any catch radius, so detect the
+    # moment it reaches/passes Wax's height (catching is a hands problem,
+    # and the engine has no hands).
+    reached_him_at = None
+    for _ in range(int(0.5 / world.dt_seconds)):
+        world.step()
+        if reached_him_at is None and coin.position[1] >= wax.position[1]:
+            reached_him_at = world.time_seconds
+            pull.active = False
+    print(f"lurcher: overhead pull frees the coin instantly; it reaches his hand "
+          f"height in {reached_him_at * 1000:.0f} ms (the same geometry PUSHED anchors it)")
+    assert reached_him_at is not None and reached_him_at < 0.05
+
+
+def check_grapple_to_fixed_metal():
+    # The Lurcher's real transport: pull against the bones of the world.
+    # A beam 10 m up and 15 m out; Wax breaks his own grip and arcs toward
+    # it, releasing on approach (no body-body collision in this engine).
+    world = World()
+    beam = world.add_body(Body("beam", 50, (10, 8), radius_m=0.2,
+                               is_metal=True, is_fixed=True))
+    wax = world.add_body(Body("wax", 80, (0, 0.3)))
+    pull = world.add_power(Ironpull(wax, beam, 5000))  # flared: he must break
+    pull.active = True                                  # his own boot-grip first
+    for _ in range(int(4.0 / world.dt_seconds)):
+        world.step()
+        if np.linalg.norm(beam.position - wax.position) < 1.5:
+            pull.active = False
+    data = world.history.body("wax")
+    peak_height = data["y"].max()
+    peak_speed = np.sqrt(data["vx"]**2 + data["vy"]**2).max()
+    print(f"grapple: Wax arcs to {peak_height:.1f} m at up to {peak_speed:.1f} m/s; "
+          f"beam unmoved: {np.linalg.norm(beam.position - [10, 8]):.4f} m")
+    assert peak_height > 5, "the grapple should genuinely lift him"
+    assert np.linalg.norm(beam.position - [10, 8]) == 0.0
+
+
 def check_iron_is_an_energy_pump():
     # Forced by the canon momentum rule: KE = p^2 / 2m, p fixed. Tapping
     # (mass up) DELETES kinetic energy from the physical world; storing
@@ -465,4 +511,6 @@ if __name__ == "__main__":
     check_shallow_push_skitters_steep_push_anchors()
     check_fixed_anchor_gives_horizontal_launch()
     check_iron_is_an_energy_pump()
+    check_pulled_coins_never_anchor()
+    check_grapple_to_fixed_metal()
     print("all probes passed")

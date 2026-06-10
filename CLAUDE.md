@@ -95,7 +95,12 @@ Done since: **cadmium** (notebook 07 — including the when-not-where theorem:
 bubbles change scheduling, never spatial paths; retraction recorded in 05/07)
 and **steel feruchemy** (notebook 08 — Legs locomotion component; a
 Steelrunner is measurably NOT a personal bubble: chemistry on the normal
-clock, kinetic state real and exportable). The repo is public:
+clock, kinetic state real and exportable); **Coulomb friction rework +
+is_fixed anchors** (notebook 09, the 59-degree Coinshot lesson); **the
+Skimmer's brake** (notebook 10 — iron feruchemy is an energy pump; tap late
+to live, never at the apex); **ironpull** (notebook 11 — pulls destroy grip
+where pushes manufacture it; Lurchers depend on the world's fixed metal).
+The repo is public:
 <https://github.com/Emsloan/mistfight> — MIT, code only, Dragonsteel IP noted.
 
 Candidates, roughly by expected fun-per-effort:
