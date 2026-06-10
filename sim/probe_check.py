@@ -352,6 +352,22 @@ def check_steel_velocity_is_kept_but_bubble_velocity_is_not():
     assert abs(bubbled - plain) < 0.5
 
 
+def check_iron_is_an_energy_pump():
+    # Forced by the canon momentum rule: KE = p^2 / 2m, p fixed. Tapping
+    # (mass up) DELETES kinetic energy from the physical world; storing
+    # (mass down) CREATES it. The magic pays the difference.
+    body = Body("skimmer", 80, (0, 50), velocity=(0, -10))
+    energy_before = 0.5 * body.mass_kg * body.velocity[1] ** 2
+    body.change_mass(160)  # tap 2x
+    energy_after_tap = 0.5 * body.mass_kg * body.velocity[1] ** 2
+    body.change_mass(40)   # then store hard
+    energy_after_store = 0.5 * body.mass_kg * body.velocity[1] ** 2
+    print(f"energy pump: {energy_before:.0f} J -> tap 2x -> {energy_after_tap:.0f} J "
+          f"(half) -> store to 40 kg -> {energy_after_store:.0f} J (quadrupled back)")
+    assert abs(energy_after_tap - energy_before / 2) < 1e-9
+    assert abs(energy_after_store - energy_after_tap * 4) < 1e-9
+
+
 class ForceRamp:
     """Test helper: a steadily growing horizontal shove."""
 
@@ -448,4 +464,5 @@ if __name__ == "__main__":
     check_static_grip_breaks_then_falls_off()
     check_shallow_push_skitters_steep_push_anchors()
     check_fixed_anchor_gives_horizontal_launch()
+    check_iron_is_an_energy_pump()
     print("all probes passed")

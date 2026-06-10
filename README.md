@@ -90,11 +90,12 @@ The numbered notebooks in [notebooks/](notebooks/) are the real documentation
 7. **Cadmium** — Marasi's trap, the healing prison, and the when-not-where theorem
 8. **The Steelrunner** — speed feruchemy, and why it is measurably not a bubble
 9. **Anchors and Traction** — Coulomb friction, fixed anchors, the 59° Coinshot geometry lesson
+10. **The Skimmer's Brake** — iron feruchemy as an energy pump; the landing doctrine
 
 ## Running it
 
 ```sh
-python -m sim.probe_check              # 20 fast assertions — the regression net
+python -m sim.probe_check              # 21 fast assertions — the regression net
 python notebooks/execute_notebooks.py  # re-run every notebook, embed outputs
 python assets/make_readme_media.py     # regenerate the README images from the sim
 ```

@@ -71,6 +71,30 @@ inertia benefit and the (nonexistent) toughness benefit stay cleanly
 separated, as hoped. Original physics-only analysis kept below for the
 record:
 
+**Refinement (same day, after Elliott pushed back twice):** an earlier
+draft claimed "structural strength scales with tapped mass" so heavy
+landings hurt the same — RETRACTED: that was a magic patch dressed as
+physics. Ground impact is bond-breaking, the same class as penetration
+(Elliott: "when somebody hits the ground, they explode"). Heavier atoms do
+not raise rated capacity. The actual no-pink-mist mechanism, assembled from
+verified pieces:
+
+- **Iron feruchemy is an energy pump** (forced by the canon momentum rule,
+  KE = p²/2m): tapping while moving DELETES kinetic energy from the
+  physical ledger (2x mass = half the KE, instantly); storing while moving
+  CREATES it. The standard cosmere reading is that Investiture absorbs /
+  supplies the difference (no specific WoB found yet — tidy Arcanum search
+  someday; sim behavior is identical either way).
+- **The Skimmer landing doctrine**, emergent from notebook 03 and formalized
+  in notebook 10: store early for speed, tap LATE to live, never tap at the
+  top. A late hard tap is an investiture-powered crash brake (energy after
+  tap = energy before x old_mass/new_mass); an apex tap is pure extra
+  payload (v=0 means p=0 means the brake has nothing to grab).
+- **Remaining lore check (open):** does book-Wax ever crash apex-heavy and
+  walk away? Only that would require an explicit invested-toughness grant.
+  His normal landings (store light + steelpush braking) and late-tap
+  impacts are fully covered by the physics already in the engine.
+
 - More mass at fixed volume = more density, but durability lives in bond
   strength, not weight. Two real effects pull opposite directions:
   - FREE WIN (already emergent via F = ma): more inertia means a punch or
