@@ -60,6 +60,15 @@ opens as raw JSON text: right-click → Open With → Jupyter Notebook editor.
   speed normalization **emerges** from the local-tick model (no boundary
   code); boundary deflection needs extended bodies — deliberately absent.
 - Compounding ≈ **10×** per Sazed/Wax, accuracy uncertain → named constant.
+- **Ground contact is Coulomb friction** (2026-06-10 rework, Elliott's
+  catch): static grip up to mu_s * normal_force — the normal force includes
+  applied downward push, so pressed coins anchor harder; past the limit,
+  only weaker kinetic friction (the drastic fall-off). `is_fixed` bodies
+  (rail spikes, structure) never move: perfect anchors. Legs own their
+  contact patch on driven ticks. Bodies spawned at floor height start
+  grounded (a sweep found the one-friction-free-tick bug; spot checks had
+  passed around it by accident). Critical Coinshot angle tan(theta) = 1/mu_s
+  = 59 deg, enforced instant-by-instant — see notebook 09.
 - **Miles has no canon healing ceiling** (Elliott): the books show him
   surviving monstrous damage and dying exactly once — firing squad, after
   his metalminds were stripped. `max_burn_charge_per_second` creates a

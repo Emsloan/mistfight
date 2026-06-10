@@ -25,6 +25,7 @@ That rule has paid out repeatedly:
 | Bullets exit bubbles at their original speed | 0 — velocity state never changed |
 | Miles is unkillable until his gold runs out | 0 — compounding is just a 10× ledger |
 | Steelrunner speed is real velocity; bubble speed isn't | 0 — F-steel dials the legs, never the clock |
+| Steep pushes anchor coins; shallow ones skitter them (critical angle 59°) | 0 — Coulomb friction; the push manufactures its own grip |
 
 ## Gallery (every image is real sim output)
 
@@ -88,11 +89,12 @@ The numbered notebooks in [notebooks/](notebooks/) are the real documentation
 6. **Miles Hundredlives** — compounding breaks zero-sum; finding his budget
 7. **Cadmium** — Marasi's trap, the healing prison, and the when-not-where theorem
 8. **The Steelrunner** — speed feruchemy, and why it is measurably not a bubble
+9. **Anchors and Traction** — Coulomb friction, fixed anchors, the 59° Coinshot geometry lesson
 
 ## Running it
 
 ```sh
-python -m sim.probe_check              # 17 fast assertions — the regression net
+python -m sim.probe_check              # 20 fast assertions — the regression net
 python notebooks/execute_notebooks.py  # re-run every notebook, embed outputs
 python assets/make_readme_media.py     # regenerate the README images from the sim
 ```

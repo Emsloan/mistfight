@@ -11,14 +11,29 @@ import numpy as np
 
 class Body:
     def __init__(self, name, mass_kg, position, velocity=(0.0, 0.0),
-                 radius_m=0.3, is_metal=False):
+                 radius_m=0.3, is_metal=False, is_fixed=False,
+                 friction_static=0.6, friction_kinetic=0.4):
         self.name = name
         self.mass_kg = float(mass_kg)
         self.position = np.array(position, dtype=float)  # meters; x = horizontal, y = up
         self.velocity = np.array(velocity, dtype=float)  # meters per second
         self.radius_m = float(radius_m)
         self.is_metal = is_metal
-        self.on_ground = False
+        # Fixed bodies are part of the world — rail spikes, building bones.
+        # They never move, no matter what pushes on them: a perfect anchor.
+        self.is_fixed = is_fixed
+        # Coulomb friction against the ground: static grip holds until the
+        # applied force exceeds friction_static * normal_force, then the body
+        # breaks loose and only the weaker friction_kinetic resists sliding.
+        self.friction_static = float(friction_static)
+        self.friction_kinetic = float(friction_kinetic)
+        # A body spawned at floor height starts grounded — otherwise it gets
+        # one friction-free tick before the ground clamp notices it, which is
+        # enough for a steelpush to skitter a coin that should have held.
+        self.on_ground = self.position[1] <= self.radius_m + 1e-9
+        # Set by Legs each tick it drives this body: the legs own the contact
+        # patch, so the world's ground friction steps aside for that tick.
+        self.driven_this_tick = False
         # Set by the world each tick: this body's experienced time per world
         # tick (scaled by any time bubble containing it). None until the
         # first step so components can fall back to the global dt.

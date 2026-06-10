@@ -352,6 +352,81 @@ def check_steel_velocity_is_kept_but_bubble_velocity_is_not():
     assert abs(bubbled - plain) < 0.5
 
 
+class ForceRamp:
+    """Test helper: a steadily growing horizontal shove."""
+
+    def __init__(self, body, newtons_per_second):
+        self.body = body
+        self.newtons_per_second = newtons_per_second
+        self.elapsed_seconds = 0.0
+
+    def tick(self, dt_seconds):
+        self.elapsed_seconds += dt_seconds
+        self.body.apply_force([self.newtons_per_second * self.elapsed_seconds, 0.0])
+
+
+def check_static_grip_breaks_then_falls_off():
+    # Elliott's phrasing, as physics: grip gets stronger until overwhelmed,
+    # then drastically falls off. A 10 kg block under a growing shove should
+    # not move a hair until ~mu_s*m*g = 58.9 N (t = 1.18 s at 50 N/s), then
+    # break loose against only the weaker kinetic friction.
+    world = World()
+    block = world.add_body(Body("block", 10, (0, 0.1), radius_m=0.1))
+    world.run(0.1)  # settle onto the ground first
+    world.add_power(ForceRamp(block, newtons_per_second=50))
+    world.run(1.0)
+    displacement_before_breakaway = abs(block.position[0])
+    world.run(0.5)
+    print(f"breakaway: moved {displacement_before_breakaway * 1000:.3f} mm by 1.0 s "
+          f"(expect 0), sliding at {block.velocity[0]:.2f} m/s by 1.5 s")
+    assert displacement_before_breakaway < 1e-6, "static grip should hold completely"
+    assert block.velocity[0] > 0.3, "past breakaway it should be properly moving"
+
+
+def check_shallow_push_skitters_steep_push_anchors():
+    # Steep (Wax overhead): the push presses the coin into the ground,
+    # GROWING its grip — the coin anchors and Wax launches. Shallow (Wax
+    # nearly level): the mostly-horizontal force overwhelms static grip and
+    # the coin skitters away, wasting the push.
+    def push_the_coin(wax_position):
+        world = World()
+        coin = world.add_body(Body("coin", 0.004, (3, 0.01), radius_m=0.01, is_metal=True))
+        wax = world.add_body(Body("wax", 80, wax_position))
+        push = world.add_power(Steelpush(wax, coin, 2000))
+        push.active = True
+        world.run(1.0)
+        wax_data = world.history.body("wax")
+        return abs(coin.position[0] - 3), wax_data["vy"].max()
+
+    coin_moved_steep, wax_rise_steep = push_the_coin((3, 1.0))
+    coin_moved_shallow, wax_rise_shallow = push_the_coin((0, 0.6))
+    print(f"steep push: coin moved {coin_moved_steep * 100:.2f} cm, Wax rises at "
+          f"{wax_rise_steep:.1f} m/s; shallow push: coin skitters {coin_moved_shallow:.0f} m, "
+          f"Wax rises at {wax_rise_shallow:.1f} m/s")
+    assert coin_moved_steep < 0.01 and wax_rise_steep > 5
+    assert coin_moved_shallow > 2 and wax_rise_shallow < 1
+
+
+def check_fixed_anchor_gives_horizontal_launch():
+    # The canon move our old hack couldn't express: pushing off a rail spike
+    # sideways. The spike is part of the world; Wax breaks his own grip and
+    # slides away fast. The same shallow geometry against a loose coin
+    # (probe above) gave him almost nothing.
+    world = World()
+    spike = world.add_body(Body("rail spike", 1.0, (3, 0.1), radius_m=0.1,
+                                is_metal=True, is_fixed=True))
+    wax = world.add_body(Body("wax", 80, (0, 0.3)))
+    push = world.add_power(Steelpush(wax, spike, 2000))
+    push.active = True
+    world.run(2.0)
+    wax_data = world.history.body("wax")
+    top_speed = np.abs(wax_data["vx"]).max()
+    print(f"rail spike: Wax reaches {top_speed:.1f} m/s horizontally; "
+          f"spike moved {np.linalg.norm(spike.position - [3, 0.1]):.4f} m")
+    assert top_speed > 8, "a fixed anchor should give a real horizontal launch"
+    assert np.linalg.norm(spike.position - [3, 0.1]) == 0.0
+
+
 if __name__ == "__main__":
     check_free_fall()
     check_momentum_conserving_mass_change()
@@ -370,4 +445,7 @@ if __name__ == "__main__":
     check_steelmind_is_zero_sum()
     check_steel_speed_is_not_a_bubble()
     check_steel_velocity_is_kept_but_bubble_velocity_is_not()
+    check_static_grip_breaks_then_falls_off()
+    check_shallow_push_skitters_steep_push_anchors()
+    check_fixed_anchor_gives_horizontal_launch()
     print("all probes passed")
