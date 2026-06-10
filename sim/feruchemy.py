@@ -74,6 +74,71 @@ class IronFeruchemy:
             self.body.change_mass(target_mass)  # conserves momentum
 
 
+class SteelFeruchemy:
+    """The steelmind (speed storage) — a Steelrunner's metal.
+
+    Canon (Coppermind): steel stores PHYSICAL SPEED. Tapping moves the body
+    many times faster; storing leaves the Ferring sluggish, 'like moving
+    through molasses'. It has nothing to do with time — a Steelrunner is NOT
+    a personal bendalloy bubble. The boundary (Elliott's framing, canon
+    silent on details like heartbeat): the magic taxes or amplifies the
+    body's MECHANICAL OUTPUT, while internal chemistry — healing, poison,
+    aging — ticks at the normal local rate. The handwaive stops at the skin.
+
+    Mechanically this is a dial on a Legs component: storing at fraction f
+    means moving at (1 - f) of normal; tapping at t means (1 + t). Zero-sum
+    like all plain feruchemy: the reserve is measured in speed-seconds
+    (one second of full normal speed forgone or regained).
+
+    The crucial difference from a bubble, which the sim makes measurable:
+    velocity earned at steel-speed is REAL KINETIC STATE the world keeps —
+    a Steelrunner's leap carries it. A bubble can only reschedule; it can
+    never add velocity (the when-not-where theorem, notebook 07).
+    """
+
+    def __init__(self, legs, initial_reserve_speed_seconds=0.0):
+        self.legs = legs
+        self.reserve_speed_seconds = float(initial_reserve_speed_seconds)
+        self.store_fraction = 0.0  # 0..1 of normal speed forgone
+        self.tap_fraction = 0.0    # extra multiples of normal speed drawn out
+
+    def store(self, fraction):
+        if not 0.0 <= fraction < 1.0:
+            raise ValueError("store fraction must be in [0, 1) — you can't store ALL your speed")
+        self.store_fraction = fraction
+        self.tap_fraction = 0.0
+
+    def tap(self, fraction):
+        if fraction < 0.0:
+            raise ValueError("tap fraction must be non-negative")
+        self.tap_fraction = fraction
+        self.store_fraction = 0.0
+
+    def stop(self):
+        self.store_fraction = 0.0
+        self.tap_fraction = 0.0
+
+    def tick(self, dt_seconds):
+        local = self.legs.body.local_dt_seconds
+        dt_local = dt_seconds if local is None else local
+
+        if self.store_fraction > 0.0:
+            self.reserve_speed_seconds += self.store_fraction * dt_local
+            self.legs.speed_multiplier = 1.0 - self.store_fraction
+        elif self.tap_fraction > 0.0:
+            drain = self.tap_fraction * dt_local
+            if drain > self.reserve_speed_seconds:
+                # The steelmind runs dry mid-stride.
+                self.reserve_speed_seconds = 0.0
+                self.tap_fraction = 0.0
+                self.legs.speed_multiplier = 1.0
+            else:
+                self.reserve_speed_seconds -= drain
+                self.legs.speed_multiplier = 1.0 + self.tap_fraction
+        else:
+            self.legs.speed_multiplier = 1.0
+
+
 # You can be sickly, but you can't store yourself to death. Modeling choice.
 MINIMUM_HEALTH_WHILE_STORING = 1.0
 

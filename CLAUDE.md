@@ -18,10 +18,10 @@ docstring and the notebook prose (linear push falloff, storing floor at
 
 ## How to run
 
-```
+```sh
 # from this folder (sessions should be LAUNCHED from this folder —
 # .claude/settings.local.json sets bypassPermissions here)
-python -m sim.probe_check              # 12 fast assertions, the regression net
+python -m sim.probe_check              # 17 fast assertions, the regression net
 python notebooks\execute_notebooks.py  # run all notebooks, embed outputs
 ```
 
@@ -82,12 +82,15 @@ instead. Verify before modeling; cite in the notebook prose.
 
 ## Roadmap (Elliott's direction, 2026-06-09): MORE METALS, not fighting
 
+Done since: **cadmium** (notebook 07 — including the when-not-where theorem:
+bubbles change scheduling, never spatial paths; retraction recorded in 05/07)
+and **steel feruchemy** (notebook 08 — Legs locomotion component; a
+Steelrunner is measurably NOT a personal bubble: chemistry on the normal
+clock, kinetic state real and exportable). The repo is public:
+<https://github.com/Emsloan/mistfight> — MIT, code only, Dragonsteel IP noted.
+
 Candidates, roughly by expected fun-per-effort:
 
-- **Cadmium slow bubbles** — `time_factor < 1` already works in the engine,
-  entirely unexplored. Marasi's trap.
-- **Steel feruchemy (speed)** — interacts deliciously with bubbles and with
-  momentum questions.
 - **Pewter (allomantic strength/durability)** — needs a damage-resistance or
   exertion model; keep it as simple as Health.
 - **Tin (senses)** — needs a perception model; may wait for actual agents.

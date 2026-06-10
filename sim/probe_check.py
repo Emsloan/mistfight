@@ -8,7 +8,8 @@ import math
 import numpy as np
 
 from sim import (Body, World, Steelpush, IronFeruchemy, GoldFeruchemy,
-                 GoldCompounding, Health, Poison, SpeedBubble, GRAVITY_M_PER_S2)
+                 SteelFeruchemy, Legs, GoldCompounding, Health, Poison,
+                 SpeedBubble, GRAVITY_M_PER_S2)
 
 
 def check_free_fall():
@@ -253,6 +254,104 @@ def check_miles_dies_when_the_metal_runs_out():
     assert health.is_dead, "without metal, Hundredlives runs out of lives"
 
 
+def make_runner(world, x=0.0, tap=None, store=None, reserve=50.0):
+    body = world.add_body(Body("runner", 80, (x, 0.3)))
+    legs = world.add_power(Legs(body, top_speed_m_per_s=8))
+    steelmind = SteelFeruchemy(legs, initial_reserve_speed_seconds=reserve)
+    world.powers.insert(0, steelmind)  # multiplier set before legs use it
+    if tap is not None:
+        steelmind.tap(tap)
+    if store is not None:
+        steelmind.store(store)
+    legs.direction = 1
+    return body, legs, steelmind
+
+
+def check_steelrunner_footrace():
+    # Tapping +4 means five times normal speed; storing 0.5 means molasses.
+    distances = {}
+    for label, kwargs in [("normal", {}), ("tapping +4", {"tap": 4.0}),
+                          ("storing 0.5", {"store": 0.5})]:
+        world = World()
+        body, _, _ = make_runner(world, **kwargs)
+        world.run(10.0)
+        distances[label] = body.position[0]
+    print(f"footrace 10 s: normal {distances['normal']:.0f} m, "
+          f"tapping {distances['tapping +4']:.0f} m, "
+          f"storing {distances['storing 0.5']:.0f} m")
+    assert abs(distances["tapping +4"] / distances["normal"] - 5.0) < 0.2
+    assert abs(distances["storing 0.5"] / distances["normal"] - 0.5) < 0.05
+
+
+def check_steelmind_is_zero_sum():
+    # Store half your speed for 10 s -> 5 speed-seconds banked; tapping +4
+    # drains 4/s -> 1.25 s of glory, then the steelmind runs dry mid-stride.
+    world = World()
+    body, legs, steelmind = make_runner(world, reserve=0.0)
+    steelmind.store(0.5)
+    world.run(10.0)
+    banked = steelmind.reserve_speed_seconds
+    steelmind.tap(4.0)
+    world.run(1.0)
+    still_fast = legs.speed_multiplier
+    world.run(0.5)
+    print(f"steelmind: banked {banked:.2f} speed-seconds (expect 5); at 1.0 s of "
+          f"tapping x{still_fast:.0f}, at 1.5 s x{legs.speed_multiplier:.0f} (ran dry)")
+    assert abs(banked - 5.0) < 0.05
+    assert still_fast == 5.0
+    assert legs.speed_multiplier == 1.0
+
+
+def check_steel_speed_is_not_a_bubble():
+    # THE distinction. Two poisoned men at "5x speed": the Steelrunner's
+    # chemistry runs at normal rate (dies at the normal 20 s), while the
+    # bubble man's whole local clock is compressed (dies at 4 s external).
+    world_steel = World()
+    runner, _, _ = make_runner(world_steel, tap=4.0, reserve=500)
+    steel_health = world_steel.add_power(Health(runner, 100, natural_regen_per_second=0))
+    world_steel.add_power(Poison(steel_health, damage_per_second=5))
+
+    world_bubble = World()
+    bystander = world_bubble.add_body(Body("man", 80, (0, 0.3)))
+    bubble_health = world_bubble.add_power(Health(bystander, 100, natural_regen_per_second=0))
+    world_bubble.add_power(Poison(bubble_health, damage_per_second=5))
+    world_bubble.add_bubble(SpeedBubble(center=(0, 0.3), radius_m=2, time_factor=5.0))
+
+    for world in (world_steel, world_bubble):
+        while not (steel_health if world is world_steel else bubble_health).is_dead:
+            world.step()
+    print(f"poisoned at 5x speed: Steelrunner dead at {world_steel.time_seconds:.1f} s "
+          f"(normal schedule), bubble man at {world_bubble.time_seconds:.1f} s")
+    assert abs(world_steel.time_seconds - 20.0) < 0.1
+    assert abs(world_bubble.time_seconds - 4.0) < 0.1
+
+
+def check_steel_velocity_is_kept_but_bubble_velocity_is_not():
+    # A leap at steel-speed carries real kinetic state; a leap "at speed"
+    # inside a bubble lands exactly where an unaided leap would (the
+    # when-not-where theorem applied to a person).
+    def long_jump(tap=None, bubble=False):
+        world = World()
+        body, legs, _ = make_runner(world, tap=tap, reserve=500)
+        if bubble:
+            world.add_bubble(SpeedBubble(center=(30, 0.3), radius_m=6, time_factor=5.0))
+        while body.position[0] < 30:
+            world.step()
+        legs.jump(6.0)
+        world.step()
+        while not body.on_ground:
+            world.step()
+        return body.position[0] - 30
+
+    plain = long_jump()
+    steel = long_jump(tap=4.0)
+    bubbled = long_jump(bubble=True)
+    print(f"long jump: plain {plain:.1f} m, steel x5 {steel:.1f} m, "
+          f"inside 5x bubble {bubbled:.1f} m (bubble should match plain)")
+    assert abs(steel / plain - 5.0) < 0.2
+    assert abs(bubbled - plain) < 0.5
+
+
 if __name__ == "__main__":
     check_free_fall()
     check_momentum_conserving_mass_change()
@@ -267,4 +366,8 @@ if __name__ == "__main__":
     check_cadmium_stretches_time()
     check_compounding_breaks_zero_sum()
     check_miles_dies_when_the_metal_runs_out()
+    check_steelrunner_footrace()
+    check_steelmind_is_zero_sum()
+    check_steel_speed_is_not_a_bubble()
+    check_steel_velocity_is_kept_but_bubble_velocity_is_not()
     print("all probes passed")

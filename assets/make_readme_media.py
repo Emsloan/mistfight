@@ -14,7 +14,7 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from sim import (Body, World, Steelpush, Health, GoldFeruchemy, GoldCompounding,
-                 IronFeruchemy, Poison, SpeedBubble, animate)
+                 IronFeruchemy, Legs, SteelFeruchemy, Poison, SpeedBubble, animate)
 
 assets_folder = pathlib.Path(__file__).parent
 
@@ -135,10 +135,49 @@ def marasi_png():
     print("marasi_gambit.png")
 
 
+def long_jump_png():
+    def long_jump(tap=None, with_bubble=False):
+        world = World()
+        body = world.add_body(Body("runner", 80, (0, 0.3)))
+        legs = world.add_power(Legs(body, top_speed_m_per_s=8))
+        steelmind = SteelFeruchemy(legs, initial_reserve_speed_seconds=500)
+        world.powers.insert(0, steelmind)
+        if tap:
+            steelmind.tap(tap)
+        if with_bubble:
+            world.add_bubble(SpeedBubble(center=(30, 0.3), radius_m=6, time_factor=5.0))
+        legs.direction = 1
+        while body.position[0] < 30:
+            world.step()
+        legs.jump(6.0)
+        world.step()
+        while not body.on_ground:
+            world.step()
+        return world.history.body("runner"), body.position[0] - 30
+
+    figure, ax = plt.subplots(figsize=(10, 3.5))
+    ax.add_patch(plt.Circle((30, 0.3), 6, color="mediumpurple", alpha=0.15))
+    for label, kwargs in [("plain runner", {}), ("Steelrunner tapping x5", {"tap": 4.0}),
+                          ("plain runner, 5x bubble at takeoff", {"with_bubble": True})]:
+        data, jump_range = long_jump(**kwargs)
+        airborne = data["x"] >= 30
+        ax.plot(data["x"][airborne], data["y"][airborne], linewidth=2,
+                label=f"{label}: {jump_range:.1f} m")
+    ax.axvline(30, color="gray", linestyle=":", linewidth=1)
+    ax.set_xlabel("x (m)"); ax.set_ylabel("height (m)")
+    ax.set_title("The long jump: a bubble reschedules, steel adds")
+    ax.legend()
+    ax.set_xlim(28, 82); ax.set_ylim(0, 3)
+    figure.tight_layout()
+    figure.savefig(assets_folder / "steel_longjump.png", dpi=110)
+    print("steel_longjump.png")
+
+
 if __name__ == "__main__":
     coin_drop_gif()
     momentum_jolt_png()
     wayne_bubble_png()
     miles_budget_png()
     marasi_png()
+    long_jump_png()
     print("all media regenerated")

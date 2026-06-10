@@ -18,12 +18,13 @@ that isn't canon is stated out loud in the module docstrings and notebooks.
 That rule has paid out repeatedly:
 
 | Book behavior | Lines of code that know about it |
-|---|---|
+| --- | --- |
 | Coinshots launch off grounded coins, not midair ones | 0 — Newton's third law + ground contact |
 | Wax flies higher while storing weight | 0 — F = ma with feruchemical mass |
 | Wayne heals fast inside his speed bubbles | 0 — normal-rate healing on a local clock |
 | Bullets exit bubbles at their original speed | 0 — velocity state never changed |
 | Miles is unkillable until his gold runs out | 0 — compounding is just a 10× ledger |
+| Steelrunner speed is real velocity; bubble speed isn't | 0 — F-steel dials the legs, never the clock |
 
 ## Gallery (every image is real sim output)
 
@@ -56,6 +57,13 @@ in the bubble, including your bloodstream) — it renegotiates deadlines:
 
 ![marasi gambit](assets/marasi_gambit.png)
 
+**A bubble reschedules; steel adds.** Three long-jumpers with identical legs:
+the Steelrunner's 5× is real kinetic state and carries him 49 m; the man
+leaping from inside a 5× bendalloy bubble looks just as fast — and lands
+within centimeters of the unaided jump, exactly as the theorem demands:
+
+![steel long jump](assets/steel_longjump.png)
+
 ## A theorem the lab tripped over
 
 **Time bubbles change *when*, never *where*.** A projectile's spatial path is
@@ -79,11 +87,12 @@ The numbered notebooks in [notebooks/](notebooks/) are the real documentation
 5. **Timeywimey** — bendalloy bubbles and THE emergence test
 6. **Miles Hundredlives** — compounding breaks zero-sum; finding his budget
 7. **Cadmium** — Marasi's trap, the healing prison, and the when-not-where theorem
+8. **The Steelrunner** — speed feruchemy, and why it is measurably not a bubble
 
 ## Running it
 
-```
-python -m sim.probe_check              # 13 fast assertions — the regression net
+```sh
+python -m sim.probe_check              # 17 fast assertions — the regression net
 python notebooks/execute_notebooks.py  # re-run every notebook, embed outputs
 python assets/make_readme_media.py     # regenerate the README images from the sim
 ```
