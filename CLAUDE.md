@@ -88,6 +88,13 @@ instead. Verify before modeling; cite in the notebook prose.
   numbered notebook. Keep the engine ignorant of characters.
 - Full descriptive names, flat loops, comments say why. Elliott reads code
   as prose; that's load-bearing.
+- Distrust plausible results: this project's biggest catches were a sim
+  narrating trajectory "dips" that didn't exist, a spawn-tick friction bug,
+  and a hold-time metric fooled by an oscillating coin. Sweeps catch what
+  spot checks forgive; the probe suite is executable truth — run it after
+  every change. Model guidance: pattern-following metal work suits any
+  capable model; engine reworks and physics derivations warrant the
+  strongest available plus Elliott's skepticism.
 
 ## Roadmap (Elliott's direction, 2026-06-09): MORE METALS, not fighting
 
@@ -103,10 +110,22 @@ where pushes manufacture it; Lurchers depend on the world's fixed metal).
 The repo is public:
 <https://github.com/Emsloan/mistfight> — MIT, code only, Dragonsteel IP noted.
 
+**NEXT UP (agreed 2026-06-10): notebook 12 — projectiles.** Two experiments:
+(1) push off a moving bullet (the friend's near-teleport hypothesis vs the
+momentum ledger; a bullet is just a small fast metal Body, no gun needed;
+sweep stored-weight fraction x projectile mass); (2) the two-point rigid
+bullet — two point masses + rigid rod, each end ticking at its local rate —
+crossing a bubble boundary, to test whether canon's deflection emerges from
+shear (the only candidate mechanism left after the when-not-where theorem).
+
+**Pewter: DEFERRED, deliberately** (Elliott + analysis, 2026-06-10): it is
+a multiplier and the lab hasn't built what it multiplies — no melee, no
+fatigue, no impact damage, no carrying. Testing it now means inventing the
+substrate first. Revisit when fights/impact damage exist; then "pewter
+fall-survival vs the Skimmer's brake" becomes a real experiment.
+
 Candidates, roughly by expected fun-per-effort:
 
-- **Pewter (allomantic strength/durability)** — needs a damage-resistance or
-  exertion model; keep it as simple as Health.
 - **Tin (senses)** — needs a perception model; may wait for actual agents.
 - **Atium** — foresight; the model question (dodge probability vs path
   prediction) is still open from the idea doc.
