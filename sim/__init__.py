@@ -14,6 +14,8 @@ from .bubbles import SpeedBubble
 from .compounding import GoldCompounding, COMPOUNDING_MULTIPLIER
 from .locomotion import Legs
 from .recording import History, plot_heights, animate
+from .rigid_constraint import RigidConstraint
+from .rigid_frame import RigidFrame
 
 __all__ = [
     "Body", "World", "GRAVITY_M_PER_S2", "Steelpush", "Ironpull",
@@ -21,4 +23,5 @@ __all__ = [
     "Health", "Poison", "SpeedBubble",
     "GoldCompounding", "COMPOUNDING_MULTIPLIER",
     "History", "plot_heights", "animate",
+    "RigidConstraint", "RigidFrame",
 ]

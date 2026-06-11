@@ -9,7 +9,7 @@ import numpy as np
 
 from sim import (Body, World, Steelpush, Ironpull, IronFeruchemy, GoldFeruchemy,
                  SteelFeruchemy, Legs, GoldCompounding, Health, Poison,
-                 SpeedBubble, GRAVITY_M_PER_S2)
+                 SpeedBubble, RigidConstraint, RigidFrame, GRAVITY_M_PER_S2)
 
 
 def check_free_fall():
@@ -489,6 +489,188 @@ def check_fixed_anchor_gives_horizontal_launch():
     assert np.linalg.norm(spike.position - [3, 0.1]) == 0.0
 
 
+def check_rigid_constraint_stability():
+    # A 10cm bullet (20g) fired at 100 m/s. It should maintain its length
+    # and total momentum (accounting for gravity).
+    world = World()
+    nose = world.add_body(Body("nose", 0.01, (0, 10), velocity=(100, 0), radius_m=0.01))
+    tail = world.add_body(Body("tail", 0.01, (-0.1, 10), velocity=(100, 0), radius_m=0.01))
+    world.add_power(RigidConstraint(nose, tail, 0.1))
+    
+    world.run(0.5)
+    dist = np.linalg.norm(nose.position - tail.position)
+    # Momentum: p_y should be m * g * t = 0.02 * 9.81 * 0.5 = 0.0981
+    total_momentum_y = nose.mass_kg * nose.velocity[1] + tail.mass_kg * tail.velocity[1]
+    expected_p_y = -0.02 * GRAVITY_M_PER_S2 * 0.5
+    
+    print(f"rigid bullet: dist {dist:.6f} m (expect 0.1), "
+          f"p_y {total_momentum_y:.4f} (expect {expected_p_y:.4f})")
+    assert abs(dist - 0.1) < 1e-7
+    assert abs(total_momentum_y - expected_p_y) < 1e-9
+
+
+class _AntiGravity:
+    # Test fixture: cancels gravity so a bullet's heading is a clean signal.
+    def __init__(self, bodies):
+        self.bodies = bodies
+
+    def apply_forces(self):
+        for body in self.bodies:
+            body.apply_force([0.0, GRAVITY_M_PER_S2 * body.mass_kg])
+
+
+def check_bubble_slows_rigid_bullets():
+    # Notebook 12: an aligned rigid bullet crossing a bubble keeps its
+    # heading EXACTLY (all internal forces act along the rod; nothing can turn it)
+    # and is slowed: each boundary crossing multiplies stored speed by
+    # (1+f)^2 / (2(1+f^2)), so a 5x bubble in-and-out leaves 81/169 of the
+    # launch speed. Verified against a 200 kHz stiff-spring ground truth.
+    world = World(dt_seconds=1.0 / 1000.0)
+    nose = world.add_body(Body("nose", 0.01, (0.1, 10), velocity=(50, 0), radius_m=0.01))
+    tail = world.add_body(Body("tail", 0.01, (-0.1, 10), velocity=(50, 0), radius_m=0.01))
+    world.add_power(RigidConstraint(nose, tail, 0.2))
+    world.add_power(_AntiGravity([nose, tail]))
+    world.add_bubble(SpeedBubble(center=(10, 10), radius_m=5, time_factor=5.0))
+    world.run(0.6)
+    center_of_mass_velocity = (nose.velocity + tail.velocity) / 2
+    exit_speed = np.linalg.norm(center_of_mass_velocity)
+    expected_speed = 50 * 81 / 169
+    print(f"bubbled bullet: exits at {exit_speed:.3f} m/s "
+          f"(expect {expected_speed:.3f} = 81/169 of 50), "
+          f"sideways velocity {center_of_mass_velocity[1]:.2e} (expect 0: no deflection)")
+    assert abs(exit_speed - expected_speed) < 1e-3
+    assert abs(center_of_mass_velocity[1]) < 1e-9
+
+
+def check_tilted_bullet_turns_and_spins():
+    # Notebook 12: a bullet whose long axis is TILTED away from its motion
+    # gets a repeatable turn and a hard spin-up at the entry boundary
+    # (10 deg tilt into a 5x bubble: -4.17 deg; ground truth -4.168 deg).
+    # The full trip then depends on the spin angle at exit, so the probe
+    # pins the settled entry numbers only, measured while both ends are
+    # inside.
+    world = World(dt_seconds=1.0 / 4000.0)
+    rod = np.array([np.cos(np.radians(10)), np.sin(np.radians(10))])
+    nose = world.add_body(Body("nose", 0.01, rod * 0.1 + [0, 10],
+                               velocity=(50, 0), radius_m=0.01))
+    tail = world.add_body(Body("tail", 0.01, -rod * 0.1 + [0, 10],
+                               velocity=(50, 0), radius_m=0.01))
+    world.add_power(RigidConstraint(nose, tail, 0.2))
+    world.add_power(_AntiGravity([nose, tail]))
+    world.add_bubble(SpeedBubble(center=(10, 10), radius_m=5, time_factor=5.0))
+    world.run(0.115)
+    assert all(np.linalg.norm(body.position - [10, 10]) < 5 for body in (nose, tail)), \
+        "bullet should be fully inside the bubble at measurement time"
+    center_of_mass_velocity = (nose.velocity + tail.velocity) / 2
+    heading = np.degrees(np.arctan2(center_of_mass_velocity[1], center_of_mass_velocity[0]))
+    relative = nose.velocity - tail.velocity
+    rod_now = nose.position - tail.position
+    rod_now /= np.linalg.norm(rod_now)
+    tangential = relative - np.dot(relative, rod_now) * rod_now
+    spin = np.degrees(np.linalg.norm(tangential) / 0.2)
+    print(f"tilted bullet: entry turn {heading:+.3f} deg (expect ~-4.17), "
+          f"spin {spin:.0f} deg/s (expect thousands)")
+    assert abs(heading - (-4.17)) < 0.2
+    assert spin > 3000
+
+
+def check_rigid_frame_holds_shape_and_momentum():
+    # Notebook 12B: a 4-point rigid frame (20 cm x 5 cm bullet) in plain
+    # flight keeps its shape to numerical precision and conserves momentum
+    # exactly: the repeated edge-by-edge corrections must not leak anything.
+    world = World(dt_seconds=1.0 / 1000.0)
+    spots = [(0.1, 30), (-0.1, 30), (0.0, 30.025), (0.0, 29.975)]
+    bodies = [world.add_body(Body(f"corner{i}", 0.005, spot,
+                                  velocity=(50, 0), radius_m=0.005))
+              for i, spot in enumerate(spots)]
+    frame = world.add_power(RigidFrame(bodies))
+    world.run(0.5)
+    momentum = sum(body.mass_kg * body.velocity for body in bodies)
+    expected_p_y = -0.02 * GRAVITY_M_PER_S2 * 0.5
+    print(f"rigid frame: shape error {frame.max_shape_error_m():.2e} m, "
+          f"p ({momentum[0]:.6f}, {momentum[1]:.6f}) expect (1, {expected_p_y:.4f})")
+    assert frame.max_shape_error_m() < 1e-9
+    assert abs(momentum[0] - 1.0) < 1e-9
+    assert abs(momentum[1] - expected_p_y) < 1e-9
+
+
+def check_dead_center_crossing_is_symmetric():
+    # Notebook 12B: a transverse pair crossing the bubble dead-center (the
+    # flight line through the bubble's center) must exit with zero spin and
+    # zero heading change — the two tips cross simultaneously by mirror
+    # symmetry, so there is nothing to wrench. The founding sanity check
+    # for the off-center experiments.
+    world = World(dt_seconds=1.0 / 4000.0)
+    up = world.add_body(Body("up", 0.01, (0, 10.05), velocity=(50, 0), radius_m=0.01))
+    down = world.add_body(Body("down", 0.01, (0, 9.95), velocity=(50, 0), radius_m=0.01))
+    world.add_power(RigidConstraint(up, down, 0.1))
+    world.add_power(_AntiGravity([up, down]))
+    world.add_bubble(SpeedBubble(center=(10, 10), radius_m=5, time_factor=5.0))
+    world.run(0.6)
+    center_of_mass_velocity = (up.velocity + down.velocity) / 2
+    relative = up.velocity - down.velocity
+    print(f"dead-center pair: sideways v {center_of_mass_velocity[1]:.2e}, "
+          f"relative |v| {np.linalg.norm(relative):.2e} (both expect 0)")
+    assert abs(center_of_mass_velocity[1]) < 1e-9
+    assert np.linalg.norm(relative) < 1e-6
+
+
+def check_off_center_crossing_turns_and_spins():
+    # Notebook 12B, Elliott's question: the same pair crossing OFF-center
+    # (miss distance 2 m) gets turned away from the bubble's center and
+    # spun up hard at entry. Ground truth (200 kHz spring): +23.6 deg and
+    # ~26000 deg/s; the projection climbs toward that from below, so the
+    # probe pins the 8 kHz values loosely.
+    world = World(dt_seconds=1.0 / 8000.0)
+    up = world.add_body(Body("up", 0.01, (0, 12.05), velocity=(50, 0), radius_m=0.01))
+    down = world.add_body(Body("down", 0.01, (0, 11.95), velocity=(50, 0), radius_m=0.01))
+    world.add_power(RigidConstraint(up, down, 0.1))
+    world.add_power(_AntiGravity([up, down]))
+    world.add_bubble(SpeedBubble(center=(10, 10), radius_m=5, time_factor=5.0))
+    bubble_center = np.array([10.0, 10.0])
+    report_time = None
+    for _ in range(int(0.3 * 8000)):
+        world.step()
+        both_inside = all(np.linalg.norm(body.position - bubble_center) < 5
+                          for body in (up, down))
+        if both_inside and report_time is None:
+            report_time = world.time_seconds + 0.004
+        if report_time is not None and world.time_seconds >= report_time:
+            break
+    center_of_mass_velocity = (up.velocity + down.velocity) / 2
+    heading = np.degrees(np.arctan2(center_of_mass_velocity[1], center_of_mass_velocity[0]))
+    relative = up.velocity - down.velocity
+    rod = up.position - down.position
+    rod /= np.linalg.norm(rod)
+    tangential = relative - np.dot(relative, rod) * rod
+    spin = np.degrees(np.linalg.norm(tangential) / 0.1)
+    print(f"off-center pair: entry turn {heading:+.1f} deg (truth +23.6, "
+          f"climbing from below), spin {spin:.0f} deg/s (truth ~26000)")
+    assert 13 < heading < 24
+    assert spin > 9000
+
+
+def check_wide_bullet_slows_at_each_crossing():
+    # Notebook 12B: the 4-point wide bullet crossing dead-center is slowed
+    # at four separate crossing events and exits at 14.653 m/s, confirmed
+    # by an independent 50 kHz spring-frame ground truth (14.651). Slower
+    # than the two-point rod's 23.964: more structure, more slow-down.
+    world = World(dt_seconds=1.0 / 4000.0)
+    spots = [(0.1, 10.0), (-0.1, 10.0), (0.0, 10.025), (0.0, 9.975)]
+    bodies = [world.add_body(Body(f"corner{i}", 0.005, spot,
+                                  velocity=(50, 0), radius_m=0.005))
+              for i, spot in enumerate(spots)]
+    world.add_power(RigidFrame(bodies))
+    world.add_power(_AntiGravity(bodies))
+    world.add_bubble(SpeedBubble(center=(10, 10), radius_m=5, time_factor=5.0))
+    world.run(0.8)
+    center_of_mass_velocity = sum(body.velocity for body in bodies) / 4
+    exit_speed = np.linalg.norm(center_of_mass_velocity)
+    print(f"wide bullet: exits dead-center crossing at {exit_speed:.3f} m/s "
+          f"(spring ground truth 14.651; rod managed 23.964)")
+    assert abs(exit_speed - 14.653) < 0.05
+
+
 if __name__ == "__main__":
     check_free_fall()
     check_momentum_conserving_mass_change()
@@ -513,4 +695,11 @@ if __name__ == "__main__":
     check_iron_is_an_energy_pump()
     check_pulled_coins_never_anchor()
     check_grapple_to_fixed_metal()
+    check_rigid_constraint_stability()
+    check_bubble_slows_rigid_bullets()
+    check_tilted_bullet_turns_and_spins()
+    check_rigid_frame_holds_shape_and_momentum()
+    check_dead_center_crossing_is_symmetric()
+    check_off_center_crossing_turns_and_spins()
+    check_wide_bullet_slows_at_each_crossing()
     print("all probes passed")
