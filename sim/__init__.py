@@ -16,6 +16,7 @@ from .locomotion import Legs
 from .recording import History, plot_heights, animate
 from .rigid_constraint import RigidConstraint
 from .rigid_frame import RigidFrame
+from .air import AirDrag, AIR_DENSITY_KG_PER_M3
 
 __all__ = [
     "Body", "World", "GRAVITY_M_PER_S2", "Steelpush", "Ironpull",
@@ -24,4 +25,5 @@ __all__ = [
     "GoldCompounding", "COMPOUNDING_MULTIPLIER",
     "History", "plot_heights", "animate",
     "RigidConstraint", "RigidFrame",
+    "AirDrag", "AIR_DENSITY_KG_PER_M3",
 ]

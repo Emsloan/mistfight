@@ -63,7 +63,7 @@ docstring and the notebook prose (linear push falloff, storing floor at
 ```sh
 # from this folder (sessions should be LAUNCHED from this folder —
 # .claude/settings.local.json sets bypassPermissions here)
-python -m sim.probe_check              # 30 fast assertions, the regression net
+python -m sim.probe_check              # 33 fast assertions, the regression net
 python notebooks\execute_notebooks.py  # run all notebooks, embed outputs
 ```
 
@@ -95,6 +95,8 @@ opens as raw JSON text: right-click → Open With → Jupyter Notebook editor.
   derives it.
 - `sim/rigid_frame.py` — N-point rigid bodies (the wide bullet): the same
   edge correction applied edge by edge, repeated per tick.
+- `sim/air.py` — quadratic air drag, opt-in (add the AirDrag power or the
+  world stays a vacuum). Air inside a bubble shares the bubble's time.
 - `sim/probe_check.py` — the assertion suite. Extend it with every new metal.
 - `notebooks/01..12B` — numbered experiment scrolls, reasoning + runs + plots
   in one scroll. Read them in order; they are the project's real docs.
@@ -204,12 +206,20 @@ energy-adding constraint — distrust-plausible-results kill #4; stiff-spring
 ground truth plus tick-rate sweeps plus spawn-point shifts are now house
 standard for boundary physics. Probe suite: 30 checks.
 
-**NEXT UP: air drag** (Elliott's direction, 2026-06-12, jumped ahead of
-portable anchors). It completes two phenomena at once: canon Skimmer
-safe-falling (left open in notebook 10) and bullet deflection (notebooks
-12/12B end with tumbling bullets in a world without air).
+Done 2026-06-12: **air drag** (notebook 13; sim/air.py, opt-in power).
+Results: terminal velocity matches the paper formula, so lighter bodies
+fall slower as sqrt(mass) — Skimmer safe-falling is real. But the
+parachute has a cliff: storing weight jumps your speed first (notebook
+03's momentum rule), and drag needs a few relaxation lengths to recover —
+store at 600 m and land at half speed, store at 100 m and land nearly
+twice as fast as never storing. Iron's two fall disciplines point opposite
+ways: brake late (notebook 10), parachute early (13). Bullets: air grips a
+tumbling bullet and not a clean one — the bubble supplies the spin, the
+air converts spin into path change (about 2 m of arrival shift at 40 m);
+aiming through a bubble scatters meters per centimeter of aim change. Not
+modeled, stated: lift / Magnus, wind, altitude thinning.
 
-**AFTER THAT: notebook 13 — portable anchors.** Push off a moving
+**NEXT UP: notebook 14 — portable anchors.** Push off a moving
 bullet (the near-teleport hypothesis vs the momentum ledger; a bullet is just
 a small fast metal Body, no gun needed; sweep stored-weight fraction x
 projectile mass).

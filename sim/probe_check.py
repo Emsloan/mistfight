@@ -9,7 +9,8 @@ import numpy as np
 
 from sim import (Body, World, Steelpush, Ironpull, IronFeruchemy, GoldFeruchemy,
                  SteelFeruchemy, Legs, GoldCompounding, Health, Poison,
-                 SpeedBubble, RigidConstraint, RigidFrame, GRAVITY_M_PER_S2)
+                 SpeedBubble, RigidConstraint, RigidFrame, AirDrag,
+                 AIR_DENSITY_KG_PER_M3, GRAVITY_M_PER_S2)
 
 
 def check_free_fall():
@@ -671,6 +672,64 @@ def check_wide_bullet_slows_at_each_crossing():
     assert abs(exit_speed - 14.653) < 0.05
 
 
+def check_terminal_velocity_matches_paper():
+    # Notebook 13: with AirDrag in the world, a falling body settles at
+    # terminal velocity = sqrt(2 m g / (air_density * drag_coefficient *
+    # pi r^2)). 15 s of fall puts a body within a fraction of a percent of
+    # terminal speed.
+    world = World()
+    ball = world.add_body(Body("ball", 1.0, (0, 600), radius_m=0.1))
+    world.add_power(AirDrag(world))
+    world.run(15.0)
+    area = np.pi * ball.radius_m ** 2
+    expected = np.sqrt(2 * ball.mass_kg * GRAVITY_M_PER_S2
+                       / (AIR_DENSITY_KG_PER_M3 * ball.drag_coefficient * area))
+    measured = -ball.velocity[1]
+    print(f"terminal velocity: {measured:.2f} m/s (paper {expected:.2f})")
+    assert abs(measured - expected) / expected < 0.002
+
+
+def check_lighter_bodies_fall_slower():
+    # The Skimmer story in one assertion: terminal velocity grows with the
+    # square root of mass, so a body at quarter weight falls at half speed.
+    world = World()
+    # The heavy ball settles at ~66 m/s and needs ~30 s of fall to get
+    # within a fraction of a percent of terminal, covering ~1900 m; both
+    # start high enough that neither lands during the run.
+    heavy = world.add_body(Body("heavy", 4.0, (0, 2200), radius_m=0.1))
+    light = world.add_body(Body("light", 1.0, (10, 2200), radius_m=0.1))
+    world.add_power(AirDrag(world))
+    world.run(30.0)
+    ratio = heavy.velocity[1] / light.velocity[1]
+    print(f"quarter weight: falls at 1/{ratio:.3f} of the heavy body's speed "
+          f"(expect 1/2.000)")
+    assert abs(ratio - 2.0) < 0.02
+
+
+def check_bubbled_faller_lands_sooner_not_harder():
+    # Drag is computed from stored velocity and integrated over local time,
+    # so the air inside a bubble shares the bubble's clock. Consequence: a
+    # faller inside a 5x bubble lands in about a fifth of the outside time
+    # but at the same speed.
+    world = World()
+    outside = world.add_body(Body("outside", 1.0, (100, 80), radius_m=0.1))
+    inside = world.add_body(Body("inside", 1.0, (0, 80), radius_m=0.1))
+    world.add_bubble(SpeedBubble(center=(0, 0), radius_m=90, time_factor=5.0))
+    world.add_power(AirDrag(world))
+    world.run(6.0)
+    outside_data = world.history.body("outside")
+    inside_data = world.history.body("inside")
+    outside_time = outside_data["t"][np.argmax(outside_data["on_ground"])]
+    inside_time = inside_data["t"][np.argmax(inside_data["on_ground"])]
+    outside_landing = -outside_data["vy"][np.argmax(outside_data["on_ground"]) - 1]
+    inside_landing = -inside_data["vy"][np.argmax(inside_data["on_ground"]) - 1]
+    print(f"bubbled faller: lands at {inside_time:.2f} s vs {outside_time:.2f} s "
+          f"(ratio {outside_time / inside_time:.1f}, expect ~5), landing speeds "
+          f"{inside_landing:.2f} vs {outside_landing:.2f} m/s (expect equal)")
+    assert abs(outside_time / inside_time - 5.0) < 0.4
+    assert abs(inside_landing - outside_landing) / outside_landing < 0.02
+
+
 if __name__ == "__main__":
     check_free_fall()
     check_momentum_conserving_mass_change()
@@ -702,4 +761,7 @@ if __name__ == "__main__":
     check_dead_center_crossing_is_symmetric()
     check_off_center_crossing_turns_and_spins()
     check_wide_bullet_slows_at_each_crossing()
+    check_terminal_velocity_matches_paper()
+    check_lighter_bodies_fall_slower()
+    check_bubbled_faller_lands_sooner_not_harder()
     print("all probes passed")

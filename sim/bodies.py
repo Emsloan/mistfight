@@ -12,13 +12,18 @@ import numpy as np
 class Body:
     def __init__(self, name, mass_kg, position, velocity=(0.0, 0.0),
                  radius_m=0.3, is_metal=False, is_fixed=False,
-                 friction_static=0.6, friction_kinetic=0.4):
+                 friction_static=0.6, friction_kinetic=0.4,
+                 drag_coefficient=0.47):
         self.name = name
         self.mass_kg = float(mass_kg)
         self.position = np.array(position, dtype=float)  # meters; x = horizontal, y = up
         self.velocity = np.array(velocity, dtype=float)  # meters per second
         self.radius_m = float(radius_m)
         self.is_metal = is_metal
+        # How much the air grips this body, used only when an AirDrag power
+        # is in the world. 0.47 is the standard value for a sphere; a person
+        # falling flat is about 1.0. Has no effect without AirDrag.
+        self.drag_coefficient = float(drag_coefficient)
         # Fixed bodies are part of the world — rail spikes, building bones.
         # They never move, no matter what pushes on them: a perfect anchor.
         self.is_fixed = is_fixed
