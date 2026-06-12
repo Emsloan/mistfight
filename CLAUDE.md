@@ -175,6 +175,16 @@ These rules exist because the same feedback was given three times in one
 session and didn't stick. Files stick. (The prose repairs to notebooks 12
 and 12B that motivated them were applied and re-verified the same day.)
 
+## Before pushing a notebook (Elliott, 2026-06-12)
+
+Review the notebook before pushing - do not auto-push notebook work.
+Reviewing means: execute it, read the rendered prose for the writing rules
+above, and LOOK AT THE FIGURES (extract the embedded PNGs and actually view
+them, not just confirm a plot object exists). "Executed clean" is not a
+review; a wrong finding or a broken plot passes that bar. Then let Elliott
+review before it ships. This rule exists because a wrong bullet finding and
+escape-code garbage both got pushed after passing "executed clean".
+
 ## Roadmap (Elliott's direction, 2026-06-09): MORE METALS, not fighting
 
 Done since: **cadmium** (notebook 07 — including the when-not-where theorem:
@@ -213,11 +223,23 @@ parachute has a cliff: storing weight jumps your speed first (notebook
 03's momentum rule), and drag needs a few relaxation lengths to recover —
 store at 600 m and land at half speed, store at 100 m and land nearly
 twice as fast as never storing. Iron's two fall disciplines point opposite
-ways: brake late (notebook 10), parachute early (13). Bullets: air grips a
-tumbling bullet and not a clean one — the bubble supplies the spin, the
-air converts spin into path change (about 2 m of arrival shift at 40 m);
-aiming through a bubble scatters meters per centimeter of aim change. Not
-modeled, stated: lift / Magnus, wind, altitude thinning.
+ways: brake late (notebook 10), parachute early (13).
+
+Bullets — CORRECTED 2026-06-12 (Opus 4.8 traced it, independent Fable 5
+review agreed, after Elliott flagged the mid-session model swap as a bias
+risk and made me check rather than trust my own say-so): air does NOT
+steer the bullet. Post-bubble path curvature is zero with or without air —
+pure drag points against motion and cannot curve a free flight. Air
+reshapes the one-time boundary kink DURING the crossing (exit slope
+-0.077 → +0.012, ~2 m arrival shift) but does not bend the free flight
+after. With gravity on, the real miss is the bubble robbing the bullet's
+speed (50 → 25 m/s) so it drops out of the sky: clean drops 3 m over 40 m,
+bubble 14 m, bubble+air 23 m. This overturned notebook 12's working slogan
+"shear torques, drag deflects" — the torque is real, the aerodynamic
+deflection is not. Lesson kept: a model swapping in and confidently finding
+the prior model wrong is itself a failure mode; the fix is an independent
+check, not authority. Not modeled, stated: lift / Magnus, wind, altitude
+thinning. Probe suite: 33 checks.
 
 **NEXT UP: notebook 14 — portable anchors.** Push off a moving
 bullet (the near-teleport hypothesis vs the momentum ledger; a bullet is just
